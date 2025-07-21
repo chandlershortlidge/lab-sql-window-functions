@@ -108,9 +108,38 @@ SELECT
 FROM result
 ORDER BY month DESC;
 
--- Error Code: 1054. Unknown column 'unique_customers' in 'field list'
 
--- Calculate the number of retained customers every month, i.e., customers who rented movies in the current and previous months.
+-- Calculate the number of retained customers every month, i.e., customers who rented movies in the current and previous months
 
-
+-- CTE 1: Get a distinct list of each customer active in each month.
+with monthly_customer_activity as (
+	select
+		distinct 
+		DATE_FORMAT(rental_date, '%Y-%m') as month,
+		customer_id
+	from rental
+-- CTE 2: For each customer, find the month of their previous activity.
+), customer_activity_with_lag as (
+select 
+	month,
+	customer_id,
+	lag(month) over (partition by customer_id order by month) as previous_month
+from monthly_customer_activity
+)
+-- Final Query: Count the retained customers for each month.
+select
+month,
+count(customer_id) as retained_customers
+FROM
+  customer_activity_with_lag
+WHERE
+  TIMESTAMPDIFF(
+    MONTH,
+    STR_TO_DATE(CONCAT(previous_month, '-01'), '%Y-%m-%d'),
+    STR_TO_DATE(CONCAT(month, '-01'), '%Y-%m-%d')
+  ) = 1
+GROUP BY
+  month
+ORDER BY
+  month;
 
