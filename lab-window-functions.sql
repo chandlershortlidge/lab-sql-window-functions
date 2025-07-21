@@ -75,10 +75,42 @@ unique_customers,
 lag(unique_customers) over (order by month) as prev_month_active,
 unique_customers - lag(unique_customers) over (order by month) as monthly_c_change
 from monthly_active
-order by month
+order by month;
 
+-- Calculate the percentage change in the number of active customers between the current and previous month.
 
+with monthly_active as 
+(
+	select
+		DATE_FORMAT(rental_date, '%Y-%m') as month,
+		count(distinct customer_id) as monthly_unique_active_customers
+	from rental
+group by month
+),
+result as (
+	select 
+	month,
+	monthly_unique_active_customers,
+	lag(monthly_unique_active_customers) over (order by month) as prev_months_active_customers,
+	monthly_unique_active_customers - lag(monthly_unique_active_customers) over (order by month) as monthly_c_change
+	from monthly_active
+	order by month
+)
+SELECT 
+	month,
+	monthly_unique_active_customers,
+    prev_months_active_customers,
+    ROUND(
+  100.0 * (monthly_unique_active_customers - prev_months_active_customers) 
+          / prev_months_active_customers,
+  1
+) AS pct_change
+FROM result
+ORDER BY month DESC;
 
+-- Error Code: 1054. Unknown column 'unique_customers' in 'field list'
+
+-- Calculate the number of retained customers every month, i.e., customers who rented movies in the current and previous months.
 
 
 
