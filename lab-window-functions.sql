@@ -49,19 +49,36 @@ film_actor_rank as (
 select * 
 from film_actor_rank 
 where actor_rank = 1
-order by last_name
-
--- -----
-
-
-
-
+order by last_name;
 
 -- Retrieve the number of monthly active customers, i.e., the number of unique customers who rented a movie in each month.
 
 select
-DATE_FORMAT(rental_date, '%Y-%m') as date_of_rental,
-count(distinct customer_id) as unique_customers
+	DATE_FORMAT(rental_date, '%Y-%m') as month,
+	count(distinct customer_id) as unique_customers
 from rental
-group by date_of_rental
+group by month;
+
+--  Retrieve the number of active users in the previous month.
+
+with monthly_active as 
+(
+	select
+		DATE_FORMAT(rental_date, '%Y-%m') as month,
+		count(distinct customer_id) as unique_customers
+	from rental
+group by month
+)
+select 
+month,
+unique_customers,
+lag(unique_customers) over (order by month) as prev_month_active,
+unique_customers - lag(unique_customers) over (order by month) as monthly_c_change
+from monthly_active
+order by month
+
+
+
+
+
 
