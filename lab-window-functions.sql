@@ -24,15 +24,33 @@ WHERE length IS NOT NULL AND length > 0;
 -- as well as the total number of films in which they have acted. 
 -- Hint: Use temporary tables, CTEs, or Views when appropiate to simplify your queries.
 
-select
-a.first_name,
-a.last_name,
-count(f.film_id) as total_films_acted
-from actor as a
-join film_actor as f 
-on a.actor_id = f.actor_id
-group by a.first_name, a.last_name
-order by count(f.film_id) desc;
+with actors_rank as (
+	select
+	a.first_name,
+	a.last_name,
+    a.actor_id,
+	count(f.film_id) as total_films_acted
+	from actor as a
+	join film_actor as f 
+	on a.actor_id = f.actor_id
+	group by a.first_name, a.last_name, a.actor_id
+	order by count(f.film_id) desc
+),
+film_actor_rank as (
+	select 
+    first_name,
+	last_name,
+	total_films_acted,
+	film_id,
+	rank() over(partition by film_id order by total_films_acted desc) as actor_rank
+	from actors_rank as ar
+	join film_actor as fa on ar.actor_id = fa.actor_id 
+)
+select * 
+from film_actor_rank 
+where actor_rank = 1
+order by last_name
+
 -- -----
 
 
